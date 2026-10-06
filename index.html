@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assignment Management Platform</title>
+  <style>
+    :root{--primary:#0ea5e9;--dark:#0f172a;--bg:#f1f5f9;--text:#1e293b;--muted:#64748b;--danger:#ef4444;--success:#22c55e;--warning:#f59e0b;--card:#ffffff}
+    *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+    header{background:linear-gradient(135deg,#0ea5e9,#6366f1);color:white;padding:30px 20px} header>div,main{max-width:1200px;margin:auto} h1{margin:0 0 8px;font-size:30px} header p{margin:0;opacity:.9}
+    main{padding:26px 20px 60px}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px}.stat{background:var(--card);border-radius:14px;padding:20px;box-shadow:0 6px 18px rgba(15,23,42,.08)}.stat b{font-size:28px;display:block;margin-bottom:6px}.stat span{color:var(--muted);font-size:14px}
+    .layout{display:grid;grid-template-columns:360px 1fr;gap:24px;align-items:start}.panel{background:var(--card);border-radius:16px;padding:24px;box-shadow:0 8px 22px rgba(15,23,42,.08)}h2{font-size:22px;margin:0 0 18px}
+    label{display:block;font-size:14px;font-weight:700;margin:12px 0 6px}input,select,textarea{width:100%;font:inherit;border:1px solid #cbd5e1;border-radius:10px;padding:12px;background:#fff}textarea{min-height:80px;resize:vertical}input:focus,select:focus,textarea:focus{outline:2px solid #bae6fd;border-color:var(--primary)}
+    .buttons{display:flex;gap:10px;margin-top:18px}button{font:inherit;font-weight:700;border:0;padding:11px 14px;border-radius:10px;cursor:pointer}.primary{background:var(--primary);color:white}.secondary{background:#e2e8f0;color:#334155}.danger{background:#fee2e2;color:var(--danger)}.success{background:#dcfce7;color:#166534}.note{min-height:20px;color:var(--success);font-size:14px;margin-top:10px}
+    .toolbar{display:grid;grid-template-columns:1fr 160px 160px 140px;gap:12px;margin-bottom:18px}.assignment-list{display:grid;gap:14px}.assignment{border:1px solid #e2e8f0;border-left:5px solid var(--primary);border-radius:12px;padding:18px;background:#fff}.assignment.completed{opacity:.7;border-left-color:var(--success)}.assignment.overdue{border-left-color:var(--danger)}.top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.title{font-size:19px;font-weight:700;margin:0}.meta{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0 0}.tag{border-radius:999px;padding:5px 10px;background:#e0f2fe;color:#075985;font-size:12px;font-weight:700}.tag.high{background:#fee2e2;color:#b91c1c}.tag.medium{background:#fef3c7;color:#92400e}.tag.low{background:#dcfce7;color:#166534}.assignment p{margin:12px 0 0;color:#475569;font-size:14px;line-height:1.45}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.actions button{padding:9px 11px;font-size:13px}.empty{text-align:center;color:var(--muted);padding:44px 12px;border:2px dashed #cbd5e1;border-radius:12px}
+    @media(max-width:900px){.layout{grid-template-columns:1fr}.toolbar{grid-template-columns:1fr}}@media(max-width:560px){.stats{grid-template-columns:1fr}.top{flex-direction:column}}
+  </style>
+</head>
+<body>
+<header><div><h1>Assignment Management Platform</h1><p>Manage assignments, track deadlines, and monitor progress.</p></div></header>
+<main>
+  <section class="stats">
+    <div class="stat"><b id="total">0</b><span>Total assignments</span></div>
+    <div class="stat"><b id="pending">0</b><span>Pending</span></div>
+    <div class="stat"><b id="overdue">0</b><span>Overdue</span></div>
+    <div class="stat"><b id="completed">0</b><span>Completed</span></div>
+  </section>
+  <div class="layout">
+    <section class="panel">
+      <h2 id="formHeading">Add Assignment</h2>
+      <form id="assignmentForm">
+        <input type="hidden" id="id">
+        <label for="title">Assignment title *</label>
+        <input id="title" required placeholder="e.g., Physics lab report">
+        <label for="subject">Subject / Course *</label>
+        <input id="subject" required placeholder="e.g., Physics">
+        <label for="dueDate">Due date *</label>
+        <input id="dueDate" type="date" required>
+        <label for="priority">Priority</label>
+        <select id="priority"><option value="High">High</option><option value="Medium" selected>Medium</option><option value="Low">Low</option></select>
+        <label for="description">Description</label>
+        <textarea id="description" placeholder="Optional assignment details"></textarea>
+        <div class="buttons">
+          <button class="primary" id="saveButton" type="submit">Save Assignment</button>
+          <button class="secondary" type="button" id="cancelButton" hidden>Cancel</button>
+        </div>
+        <div class="note" id="message"></div>
+      </form>
+    </section>
+    <section class="panel">
+      <h2>Your Assignments</h2>
+      <div class="toolbar">
+        <input type="search" id="search" placeholder="Search by title, subject, or description...">
+        <select id="subjectFilter"><option value="">All subjects</option></select>
+        <select id="statusFilter"><option value="all">All status</option><option value="pending">Pending</option><option value="completed">Completed</option><option value="overdue">Overdue</option></select>
+        <select id="priorityFilter"><option value="">All priorities</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
+      </div>
+      <div id="list" class="assignment-list"></div>
+    </section>
+  </div>
+</main>
+<script>
+const KEY='assignment-platform-data';
+let assignments=JSON.parse(localStorage.getItem(KEY)||'[]');
+const $=id=>document.getElementById(id);
+const form=$('assignmentForm');
+const list=$('list');
+function esc(s){return String(s||'').replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"').replace(/'/g,"'");}
+const today=()=>new Date().toISOString().slice(0,10);
+const isOverdue=a=>!a.completed&&a.dueDate<today();
+function save(){localStorage.setItem(KEY,JSON.stringify(assignments));}
+function updateSubjects(){const value=$('subjectFilter').value;const subjects=[...new Set(assignments.map(a=>a.subject))].sort();$('subjectFilter').innerHTML='<option value="">All subjects</option>'+subjects.map(s=>'<option '+(s===value?'selected':'')+'>'+esc(s)+'</option>').join('');}
+function updateStats(){const pending=assignments.filter(a=>!a.completed).length;const overdue=assignments.filter(isOverdue).length;const completed=assignments.filter(a=>a.completed).length;$('total').textContent=assignments.length;$('pending').textContent=pending;$('overdue').textContent=overdue;$('completed').textContent=completed;}
+function render(){updateSubjects();updateStats();const q=$('search').value.toLowerCase();const subject=$('subjectFilter').value;const status=$('statusFilter').value;const priority=$('priorityFilter').value;let data=assignments.filter(a=>{const match=[a.title,a.subject,a.description,a.priority].join(' ').toLowerCase().includes(q);const statusOK=status==='all'||(status==='completed'&&a.completed)||(status==='overdue'&&isOverdue(a))||(status==='pending'&&!a.completed);return match&&(!subject||a.subject===subject)&&statusOK&&(!priority||a.priority===priority);}).sort((a,b)=>a.completed-b.completed||a.dueDate.localeCompare(b.dueDate));if(!data.length){list.innerHTML='<div class="empty">'+(assignments.length?'No assignments match the selected filters.':'No assignments yet. Add one using the form.')+'</div>';return;}list.innerHTML=data.map(a=>{const btnText=a.completed?'Mark Pending':'Mark Completed';const btnClass=a.completed?'secondary':'success';const overdueTag=isOverdue(a)?'<span class="tag high">Overdue</span>':'';const completedTag=a.completed?'<span class="tag low">Completed</span>':'';const descHtml=a.description?'<p>'+esc(a.description)+'</p>':'';return '<article class="assignment '+(a.completed?'completed':'')+' '+(isOverdue(a)?'overdue':'')+'"><div class="top"><h3 class="title">'+esc(a.title)+'</h3><span class="tag '+a.priority.toLowerCase()+'">'+esc(a.priority)+' priority</span></div><div class="meta"><span class="tag">'+esc(a.subject)+'</span><span class="tag">Due: '+esc(a.dueDate)+'</span>'+overdueTag+completedTag+'</div>'+descHtml+'<div class="actions"><button class="'+btnClass+'" onclick="toggleDone(\''+a.id+'\')">'+btnText+'</button><button class="secondary" onclick="editAssignment(\''+a.id+'\')">Edit</button><button class="danger" onclick="deleteAssignment(\''+a.id+'\')">Delete</button></div></article>';}).join('');}
+function reset(){form.reset();$('id').value='';$('formHeading').textContent='Add Assignment';$('saveButton').textContent='Save Assignment';$('cancelButton').hidden=true;}
+form.addEventListener('submit',e=>{e.preventDefault();const a={id:$('id').value||crypto.randomUUID(),title:$('title').value.trim(),subject:$('subject').value.trim(),dueDate:$('dueDate').value,priority:$('priority').value,description:$('description').value.trim(),completed:false};if(a.id&&$('id').value){const old=assignments.find(x=>x.id===a.id);a.completed=old.completed;assignments=assignments.map(x=>x.id===a.id?a:x);$('message').textContent='Assignment updated.';}else{assignments.push(a);$('message').textContent='Assignment saved.';}save();reset();render();setTimeout(()=>$('message').textContent='',2200);});
+window.toggleDone=function(id){assignments=assignments.map(a=>a.id===id?{...a,completed:!a.completed}:a);save();render();};
+window.editAssignment=function(id){const a=assignments.find(x=>x.id===id);['id','title','subject','dueDate','priority','description'].forEach(k=>$(k).value=a[k]||'');$('formHeading').textContent='Edit Assignment';$('saveButton').textContent='Update Assignment';$('cancelButton').hidden=false;window.scrollTo({top:0,behavior:'smooth'});};
+window.deleteAssignment=function(id){if(confirm('Delete this assignment?')){assignments=assignments.filter(a=>a.id!==id);save();render();}};
+$('cancelButton').onclick=reset;$('search').oninput=render;$('subjectFilter').onchange=render;$('statusFilter').onchange=render;$('priorityFilter').onchange=render;render();
+</script>
+</body>
+</html>
